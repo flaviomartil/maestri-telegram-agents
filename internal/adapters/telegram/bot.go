@@ -82,6 +82,10 @@ func redact(err error, token string) string {
 // Check verifies the token with getMe and clears any webhook (dropping
 // pending updates) so long polling can start. It returns the bot identity.
 func Check(ctx context.Context, b *bot.Bot, log *slog.Logger) (BotIdentity, error) {
+	return check(ctx, b, log, true)
+}
+
+func check(ctx context.Context, b *bot.Bot, log *slog.Logger, dropPending bool) (BotIdentity, error) {
 	if log == nil {
 		log = slog.New(slog.DiscardHandler)
 	}
@@ -91,7 +95,7 @@ func Check(ctx context.Context, b *bot.Bot, log *slog.Logger) (BotIdentity, erro
 	}
 	id := BotIdentity{ID: me.ID, Username: me.Username}
 	log.Info("telegram bot identified", slog.Int64("bot_id", id.ID), slog.String("username", id.Username))
-	if _, err := b.DeleteWebhook(ctx, &bot.DeleteWebhookParams{DropPendingUpdates: true}); err != nil {
+	if _, err := b.DeleteWebhook(ctx, &bot.DeleteWebhookParams{DropPendingUpdates: dropPending}); err != nil {
 		return id, fmt.Errorf("deleteWebhook: %w", translate(err))
 	}
 	log.Debug("telegram webhook cleared")

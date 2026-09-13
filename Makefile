@@ -14,6 +14,7 @@ LDFLAGS     := -s -w -X main.version=$(VERSION)
 
 build:
 	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o bin/herdr-tg ./cmd/herdr-tg
+	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o bin/maestri-tg ./cmd/maestri-tg
 
 test:
 	go test -race ./...

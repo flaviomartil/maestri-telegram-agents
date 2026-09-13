@@ -200,7 +200,7 @@ func (g *Gateway) onTopicUpdate(ctx context.Context, _ *bot.Bot, u *models.Updat
 		g.emit(ctx, "topic_reopened", thread, domain.TopicReopened{ThreadID: thread})
 	case m.Text != "":
 		g.log.Debug("telegram topic message", slog.Int("thread_id", thread), slog.Int("message_id", m.ID), slog.Int("len", len(m.Text)))
-		g.emit(ctx, "topic_message", thread, domain.TopicMessage{ThreadID: thread, MessageID: m.ID, FromID: m.From.ID, Text: m.Text})
+		g.emit(ctx, "topic_message", thread, domain.TopicMessage{ThreadID: thread, MessageID: m.ID, FromID: m.From.ID, Text: m.Text, ReplyTo: replyToID(m)})
 	default:
 		at := attachmentOf(m)
 		if at == nil {
@@ -218,7 +218,7 @@ func (g *Gateway) onTopicUpdate(ctx context.Context, _ *bot.Bot, u *models.Updat
 // a video, with the caption and the media group. Stickers, animations and
 // the rest answer nil.
 func attachmentOf(m *models.Message) *domain.TopicAttachment {
-	at := domain.TopicAttachment{ThreadID: m.MessageThreadID, MessageID: m.ID, FromID: m.From.ID, GroupID: m.MediaGroupID, Caption: m.Caption}
+	at := domain.TopicAttachment{ThreadID: m.MessageThreadID, MessageID: m.ID, FromID: m.From.ID, GroupID: m.MediaGroupID, Caption: m.Caption, ReplyTo: replyToID(m)}
 	switch {
 	case m.Document != nil:
 		at.Kind, at.FileID, at.Name, at.MIME, at.Size = domain.AttachmentDocument, m.Document.FileID, m.Document.FileName, m.Document.MimeType, m.Document.FileSize
@@ -240,6 +240,13 @@ func attachmentOf(m *models.Message) *domain.TopicAttachment {
 		return nil
 	}
 	return &at
+}
+
+func replyToID(m *models.Message) int {
+	if m.ReplyToMessage != nil {
+		return m.ReplyToMessage.ID
+	}
+	return 0
 }
 
 // onCallback translates an operator's button press into a domain event. A

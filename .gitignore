@@ -1,2 +1,17 @@
 bin/
 dist/
+.env
+.env.*
+!.env.example
+wire-token
+relay.json
+/config.json
+/state/
+/catalog/
+*.maestripartitura
+*.maestripartituras
+AGENTS.md
+.agents/
+.claude/
+.codex/
+/docs/diagrams/*.visual-check.*

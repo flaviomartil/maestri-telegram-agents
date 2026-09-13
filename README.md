@@ -1,4 +1,65 @@
-# Telegram Agents for Herdr
+# Maestri Relay
+
+Controle agentes e monte equipes no Maestri pelo Telegram. Um grupo, tópicos `Workspace · Andar` e um tópico `Maestro` para criar ou adaptar equipes por descrição.
+
+Fork de [herdr-telegram-agents](https://github.com/permgps/herdr-telegram-agents), com integração pela API oficial Maestri Wire. Projeto experimental: testes locais passam, mas a integração com um host Maestri e um grupo Telegram reais ainda precisa ser validada.
+
+![Uso do Maestri Relay: grupo Telegram, roteamento por andar, catálogo, IA opcional e Maestri](docs/diagrams/maestri-relay.png)
+
+[Diagrama interativo Archify](docs/diagrams/maestri-relay.html) · [Fonte do diagrama](docs/diagrams/maestri-relay.architecture.json). No GitHub, baixe o HTML e abra no navegador; ele oferece zoom, busca, temas e exportação. O conteúdo está em português; os controles fixos do visualizador estão em inglês.
+
+## Recursos
+
+| Recurso | Como usar |
+| --- | --- |
+| Um tópico por workspace e andar | O bot descobre os workspaces autorizados e cria seus tópicos. |
+| Conversa com o agente certo | `/agents`, depois responda ao card; sem resposta, o destino é o único coordenador ativo. |
+| Status, terminal e anexos | `/status`, `/screen`, `/focus`, `/stop`, `/interrupt` e arquivos de até 8 MiB. |
+| Catálogo completo do guia fixado | `/partituras descrição` busca 257 partituras e 115 referências. |
+| Aplicação de modelos | `/apply ID` cria a equipe no andar do tópico. |
+| Criação e adaptação com IA | `/create descrição` ou `/adapt ID descrição`; exige provedor compatível com OpenAI. |
+| Prévia e retomada | `/preview descrição` gera um plano; `/resume ID` retoma etapas registradas. |
+| Controle de acesso | Grupo, operadores e workspaces explícitos; TLS e pareamento Wire. |
+
+## Começar
+
+Na pasta do repositório, com Go 1.25 e Make:
+
+```sh
+make build
+bin/maestri-tg init
+```
+
+Edite `~/.config/maestri-relay/config.json` com endereço/chave pública do Wire, ID do grupo, operadores e workspaces permitidos. Forneça `TELEGRAM_BOT_TOKEN` no ambiente local. Ative o pareamento no Maestri e execute:
+
+```sh
+bin/maestri-tg pair
+bin/maestri-tg doctor
+bin/maestri-tg catalog-sync
+bin/maestri-tg run
+```
+
+O bot deve ser administrador de um supergrupo com tópicos. Use o tópico de um andar para conversar ou aplicar modelos. No `Maestro`, experimente: “Crie no workspace Projeto Demo um andar Revisão com um coordenador e dois revisores Codex”. Para isso, configure `llmURL`, `llmModel` e a chave do provedor no ambiente.
+
+**Cada instalação usa suas próprias credenciais.** Nenhum token compartilhado é distribuído. O pareamento é salvo fora do repositório; arquivos `.env`, estado local e tokens estão no `.gitignore`. Veja [configuração completa](docs/maestri-relay-setup.md) e [auditoria para publicação](docs/publication-audit.md).
+
+## Limites atuais
+
+O catálogo fixado inclui **257 partituras e 115 exemplos de referência**. Partituras com portais exigem importação inicial na biblioteca do Maestri, porque o Wire permite listar/aplicar, mas não importar a biblioteca nem criar portais. As referências são materializadas como notas; receitas e scripts do guia não são executados. Adaptações que alterem portais podem exigir nova importação.
+
+`/screen` mostra uma prévia, sem histórico completo do terminal. A paridade com os controles Git e de presença do Herdr permanece pendente. `make build` preserva também `bin/herdr-tg`; instaladores e releases do upstream atendem ao Herdr original.
+
+- [Configuração, comandos e limites atuais](docs/maestri-relay-setup.md)
+- [Plano aprovado e critérios de aceite](docs/maestri-relay-plan.md)
+
+Diagrama produzido com [Archify](https://github.com/tt-a1i/archify). Código sob [licença MIT](LICENSE), com histórico e atribuição do upstream preservados. O conteúdo do Guia do Maestri é baixado pelo usuário; não é redistribuído neste repositório.
+
+<details>
+<summary>Documentação original do Herdr</summary>
+
+## Telegram Agents for Herdr: documentação original
+
+As instruções, instaladores e recursos abaixo pertencem ao executável Herdr original. Para o Maestri Relay, siga o guia de configuração acima.
 
 > One Telegram forum topic per live Herdr agent: status in the topic icon, messages both ways.
 
@@ -240,3 +301,5 @@ tag, so a checkout runs the binary that tag was built from.
 ## License
 
 [MIT](LICENSE).
+
+</details>

@@ -57,6 +57,7 @@ type TopicMessage struct {
 	MessageID int
 	FromID    int64
 	Text      string
+	ReplyTo   int
 }
 
 // AttachmentKind names what an operator attached to a topic message.
@@ -87,6 +88,7 @@ type TopicAttachment struct {
 	MIME      string
 	Size      int64
 	Caption   string
+	ReplyTo   int
 }
 
 // ButtonPressed is emitted when an operator presses an inline button under

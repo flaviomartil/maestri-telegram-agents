@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Maestri Relay · do Telegram ao canvas",
+    "quality_profile": "showcase",
+    "viewBox": [1180, 610],
+    "views": [
+      {"id": "conversar", "label": "Conversar com agentes", "focus": ["grupo", "relay", "maestri"], "note": "Um grupo, tópicos por workspace e andar. Responda ao card para escolher o agente."},
+      {"id": "montar", "label": "Criar e adaptar equipes", "focus": ["grupo", "catalogo", "relay", "modelo", "maestri"], "note": "Use /apply para modelos ou /create e /adapt com um provedor de IA configurado."}
+    ]
+  },
+  "components": [
+    {"id": "grupo", "type": "frontend", "label": "Grupo Telegram", "sublabel": "Maestro + Workspace · Andar", "pos": [50, 270], "size": [260, 90]},
+    {"id": "relay", "type": "backend", "label": "Maestri Relay", "sublabel": "Valida, roteia e cria equipes", "pos": [460, 270], "size": [260, 90]},
+    {"id": "maestri", "type": "external", "label": "Maestri", "sublabel": "Workspaces, andares e agentes", "pos": [870, 270], "size": [260, 90]},
+    {"id": "catalogo", "type": "database", "label": "Guia do Maestri", "sublabel": "257 partituras + 115 referências", "pos": [50, 60], "size": [260, 90]},
+    {"id": "modelo", "type": "cloud", "label": "IA opcional", "sublabel": "Planeja pela sua descrição", "pos": [870, 60], "size": [260, 90]},
+    {"id": "estado", "type": "database", "label": "Estado local", "sublabel": "Vínculos e etapas registradas", "pos": [460, 480], "size": [260, 90]}
+  ],
+  "connections": [
+    {"id": "conversa", "from": "grupo", "to": "relay", "label": "Bot API", "variant": "emphasis", "labelDy": 34},
+    {"id": "wire", "from": "relay", "to": "maestri", "label": "HTTPS / WSS", "variant": "emphasis", "labelDy": 34},
+    {"id": "modelos", "from": "catalogo", "to": "relay", "label": "/apply", "variant": "dashed"},
+    {"id": "planejar", "from": "relay", "to": "modelo", "label": "/create · /adapt", "variant": "dashed"},
+    {"id": "persistir", "from": "relay", "to": "estado", "label": "Retomada", "labelDy": 70}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "Conversar", "items": ["/agents lista os agentes do andar", "Responda ao card do destinatário", "Veja status e prévia com /screen"]},
+    {"dot": "emerald", "title": "Montar", "items": ["/partituras busca todos os exemplos", "/preview gera um plano sem executar", "/apply, /create e /adapt criam a equipe"]},
+    {"dot": "amber", "title": "Portais e referências", "items": ["Portais exigem importação no Maestri", "Depois da importação, use /resume", "Referências viram notas, não scripts"]}
+  ]
+}

@@ -1,36 +1,36 @@
 # Maestri Relay
 
-Controle agentes e monte equipes no Maestri pelo Telegram. Um grupo, tópicos `Workspace · Andar` e um tópico `Maestro` para criar ou adaptar equipes por descrição.
+Control agents and build teams in Maestri from Telegram. One group, `Workspace · Floor` topics, and a `Maestro` topic for creating or adapting teams from a description.
 
-Fork de [herdr-telegram-agents](https://github.com/permgps/herdr-telegram-agents), com integração pela API oficial Maestri Wire. Projeto experimental: testes locais passam, mas a integração com um host Maestri e um grupo Telegram reais ainda precisa ser validada.
+A fork of [herdr-telegram-agents](https://github.com/permgps/herdr-telegram-agents), integrated through the official Maestri Wire API. Experimental: local tests pass, but integration with a real Maestri host and Telegram group still needs validation.
 
-![Uso do Maestri Relay: grupo Telegram, roteamento por andar, catálogo, IA opcional e Maestri](docs/diagrams/maestri-relay.png)
+![Maestri Relay usage: Telegram group, floor routing, catalog, optional AI and Maestri](docs/diagrams/maestri-relay.png)
 
-[Diagrama interativo Archify](docs/diagrams/maestri-relay.html) · [Fonte do diagrama](docs/diagrams/maestri-relay.architecture.json). No GitHub, baixe o HTML e abra no navegador; ele oferece zoom, busca, temas e exportação. O conteúdo está em português; os controles fixos do visualizador estão em inglês.
+[Interactive Archify diagram](docs/diagrams/maestri-relay.html) · [Diagram source](docs/diagrams/maestri-relay.architecture.json). On GitHub, download the HTML and open it in your browser for zoom, search, themes and export.
 
-## Recursos
+## Features
 
-| Recurso | Como usar |
+| Feature | How to use it |
 | --- | --- |
-| Um tópico por workspace e andar | O bot descobre os workspaces autorizados e cria seus tópicos. |
-| Conversa com o agente certo | `/agents`, depois responda ao card; sem resposta, o destino é o único coordenador ativo. |
-| Status, terminal e anexos | `/status`, `/screen`, `/focus`, `/stop`, `/interrupt` e arquivos de até 8 MiB. |
-| Catálogo completo do guia fixado | `/partituras descrição` busca 257 partituras e 115 referências. |
-| Aplicação de modelos | `/apply ID` cria a equipe no andar do tópico. |
-| Criação e adaptação com IA | `/create descrição` ou `/adapt ID descrição`; exige provedor compatível com OpenAI. |
-| Prévia e retomada | `/preview descrição` gera um plano; `/resume ID` retoma etapas registradas. |
-| Controle de acesso | Grupo, operadores e workspaces explícitos; TLS e pareamento Wire. |
+| One topic per workspace and floor | The bot discovers authorized workspaces and creates their topics. |
+| Talk to the right agent | Use `/agents`, then reply to a card; otherwise, messages go to the sole active coordinator. |
+| Status, terminal controls and attachments | `/status`, `/screen`, `/focus`, `/stop`, `/interrupt`, and files up to 8 MiB. |
+| Complete catalog from the pinned guide | `/partituras description` searches 257 partituras and 115 references. |
+| Apply templates | `/apply ID` creates a team on the topic's floor. |
+| Create and adapt with AI | `/create description` or `/adapt ID description`; requires an OpenAI-compatible provider. |
+| Preview and resume | `/preview description` produces a plan; `/resume ID` resumes recorded steps. |
+| Access control | Explicit group, operator and workspace permissions; TLS and Wire pairing. |
 
-## Começar
+## Getting started
 
-Na pasta do repositório, com Go 1.25 e Make:
+From the repository directory, with Go 1.25 and Make installed:
 
 ```sh
 make build
 bin/maestri-tg init
 ```
 
-Edite `~/.config/maestri-relay/config.json` com endereço/chave pública do Wire, ID do grupo, operadores e workspaces permitidos. Forneça `TELEGRAM_BOT_TOKEN` no ambiente local. Ative o pareamento no Maestri e execute:
+Edit `~/.config/maestri-relay/config.json` with the Wire address/public key, group ID, operators and allowed workspaces. Set `TELEGRAM_BOT_TOKEN` in the local environment. Enable pairing in Maestri and run:
 
 ```sh
 bin/maestri-tg pair
@@ -39,27 +39,27 @@ bin/maestri-tg catalog-sync
 bin/maestri-tg run
 ```
 
-O bot deve ser administrador de um supergrupo com tópicos. Use o tópico de um andar para conversar ou aplicar modelos. No `Maestro`, experimente: “Crie no workspace Projeto Demo um andar Revisão com um coordenador e dois revisores Codex”. Para isso, configure `llmURL`, `llmModel` e a chave do provedor no ambiente.
+The bot must be an administrator of a supergroup with topics enabled. Use a floor topic to chat or apply templates. In `Maestro`, try: “Create a Review floor in the Demo Project workspace with one coordinator and two Codex reviewers.” For this, configure `llmURL`, `llmModel` and the provider key in the environment.
 
-**Cada instalação usa suas próprias credenciais.** Nenhum token compartilhado é distribuído. O pareamento é salvo fora do repositório; arquivos `.env`, estado local e tokens estão no `.gitignore`. Veja [configuração completa](docs/maestri-relay-setup.md) e [auditoria para publicação](docs/publication-audit.md).
+**Each installation uses its own credentials.** No shared tokens are distributed. Pairing is stored outside the repository; `.env` files, local state and tokens are covered by `.gitignore`. See the [full setup guide](docs/maestri-relay-setup.md) and [publication audit](docs/publication-audit.md).
 
-## Limites atuais
+## Current limitations
 
-O catálogo fixado inclui **257 partituras e 115 exemplos de referência**. Partituras com portais exigem importação inicial na biblioteca do Maestri, porque o Wire permite listar/aplicar, mas não importar a biblioteca nem criar portais. As referências são materializadas como notas; receitas e scripts do guia não são executados. Adaptações que alterem portais podem exigir nova importação.
+The pinned catalog includes **257 partituras and 115 reference examples**. Partituras are Maestri's saved canvas arrangements. Those containing portals require an initial import into Maestri's library: Wire can list/apply them, but cannot import the library or create portals. References become notes; recipes and scripts from the guide are not executed. Adaptations that change portals may require another import.
 
-`/screen` mostra uma prévia, sem histórico completo do terminal. A paridade com os controles Git e de presença do Herdr permanece pendente. `make build` preserva também `bin/herdr-tg`; instaladores e releases do upstream atendem ao Herdr original.
+`/screen` shows a preview, without full terminal history. Parity with Herdr's Git and presence controls is still pending. Bot and CLI messages currently use Brazilian Portuguese; natural-language requests can be written in English. `make build` also preserves `bin/herdr-tg`; upstream installers and releases target the original Herdr integration.
 
-- [Configuração, comandos e limites atuais](docs/maestri-relay-setup.md)
-- [Plano aprovado e critérios de aceite](docs/maestri-relay-plan.md)
+- [Setup, commands and current limitations](docs/maestri-relay-setup.md)
+- [Approved plan and acceptance criteria](docs/maestri-relay-plan.md)
 
-Diagrama produzido com [Archify](https://github.com/tt-a1i/archify). Código sob [licença MIT](LICENSE), com histórico e atribuição do upstream preservados. O conteúdo do Guia do Maestri é baixado pelo usuário; não é redistribuído neste repositório.
+Diagram made with [Archify](https://github.com/tt-a1i/archify). Code is [MIT licensed](LICENSE), with upstream history and attribution preserved. Users download the Maestri Guide content themselves; it is not redistributed in this repository.
 
 <details>
-<summary>Documentação original do Herdr</summary>
+<summary>Original Herdr documentation</summary>
 
-## Telegram Agents for Herdr: documentação original
+## Telegram Agents for Herdr: original documentation
 
-As instruções, instaladores e recursos abaixo pertencem ao executável Herdr original. Para o Maestri Relay, siga o guia de configuração acima.
+The instructions, installers and features below belong to the original Herdr executable. For Maestri Relay, follow the setup guide above.
 
 > One Telegram forum topic per live Herdr agent: status in the topic icon, messages both ways.
 

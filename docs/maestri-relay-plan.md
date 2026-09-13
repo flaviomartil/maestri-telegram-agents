@@ -1,169 +1,169 @@
-# Maestri Relay: nomes e plano do fork
+# Maestri Relay: fork naming and implementation plan
 
-Estado da implementação em 13/09/2026: adaptador Wire, tópicos por andar, catálogo completo indexado, planejador e executor implementados localmente. Este documento preserva o escopo aprovado, incluindo critérios ainda pendentes. Consulte [configuração e limites atuais](maestri-relay-setup.md), especialmente a importação de portais, as referências não executáveis e a validação em host real ainda necessária.
+Implementation status as of September 13, 2026: Wire adapter, floor topics, fully indexed catalog, planner and executor implemented locally. This document preserves the approved scope, including outstanding criteria. See [setup and current limitations](maestri-relay-setup.md), especially portal imports, non-executable references and the live host validation still required.
 
-Minha sugestão é **Maestri Relay**, com repositório `maestri-telegram-agents` e binário `maestri-tg`. O nome comunica a ponte entre Telegram e Maestri; o repositório mantém a relação clara com o projeto original.
+The proposed name is **Maestri Relay**, with repository `maestri-telegram-agents` and binary `maestri-tg`. The name describes the bridge between Telegram and Maestri, while the repository name retains a clear connection to the original project.
 
-Outras opções:
+Other options:
 
-| Nome | Quando escolher |
+| Name | When to choose it |
 | --- | --- |
-| Maestri Remote | Mais direto para quem quer controlar os agentes pelo celular. |
-| Maestri Telegraph | Identidade própria ligada a mensagens e notificações. |
-| Maestri Conductor | Ênfase em coordenar agentes de vários projetos. |
-| Maestri Telegram Agents | Máxima clareza, próximo ao nome do original. |
+| Maestri Remote | A direct name for controlling agents from a phone. |
+| Maestri Telegraph | A distinct identity centered on messages and notifications. |
+| Maestri Conductor | Emphasizes coordinating agents across projects. |
+| Maestri Telegram Agents | Maximum clarity, close to the original name. |
 
-Disponibilidade dos nomes e marcas não foi verificada.
+Name and trademark availability have not been checked.
 
-## O que o fork deve fazer
+## What the fork should do
 
-Um único grupo Telegram, com um único bot, reúne os workspaces autorizados da instalação Maestri. Cada par workspace/andar tem um tópico identificado por `Workspace · Andar`, compartilhado pelos agentes daquele andar. Não há subtópicos nem um grupo por workspace.
+One Telegram group and one bot bring together the authorized workspaces in a Maestri installation. Each workspace/floor pair has a `Workspace · Floor` topic shared by that floor's agents. There are no subtopics or separate groups per workspace.
 
-Exemplo de tópicos: `Maestro`, `Projeto Demo · Térreo`, `Projeto Demo · Redesign` e `Loja Demo · Revisão`. O tópico global `Maestro` cria e organiza workspaces, andares e equipes a partir de descrições ou exemplos. General mantém o índice com links para os tópicos.
+Example topics: `Maestro`, `Demo Project · Ground Floor`, `Demo Project · Redesign` and `Demo Store · Review`. The global `Maestro` topic creates and organizes workspaces, floors and teams from descriptions or examples. General holds an index linking to the topics. These are illustrative labels; the current runtime uses `Térreo` for the ground floor.
 
-Dentro de cada tópico de andar, uma mensagem sem destinatário vai para o coordenador designado daquele andar. Responder a uma mensagem de agente encaminha a resposta àquele agente; um seletor permite dirigir uma nova mensagem a outro agente. Todas as saídas identificam seu autor. Nunca enviar uma mensagem a todos os agentes por padrão nem manter um destinatário global mutável compartilhado entre usuários.
+Inside a floor topic, a message without a recipient goes to that floor's designated coordinator. Replying to an agent's message routes the response to that agent; a selector lets users address a new message to another agent. All output identifies its author. Never broadcast to all agents by default or keep a mutable global recipient shared between users.
 
-O catálogo inclui **todas as partituras e exemplos do Guia do Maestri**, com busca por descrição, aplicação automática e adaptação por IA. A cobertura completa é requisito de entrega; começar por um exemplo na prova técnica não reduz o escopo final.
+The catalog includes **all partituras and examples from the Maestri Guide**, with description search, automatic application and AI adaptation. Complete coverage is a delivery requirement; starting with one example in a technical proof does not reduce the final scope.
 
-“Qualquer workspace” significa poder habilitar qualquer workspace, preservando as permissões do Maestri. Não significa expor automaticamente todos os projetos. Controle de outras máquinas fica fora da primeira versão.
+“Any workspace” means that any workspace can be enabled while preserving Maestri permissions. It does not mean automatically exposing every project. Controlling other machines is outside the first version's scope.
 
-## O que já existe e vale reaproveitar
+## Existing functionality worth reusing
 
-O [herdr-telegram-agents](https://github.com/permgps/herdr-telegram-agents) tem licença MIT e usa Go 1.25. Já oferece tópicos por agente, status, mensagens bidirecionais, botões para perguntas, leitura do terminal, anexos, comandos Git, criação de agentes, operadores/observadores e persistência do vínculo entre agente e tópico.
+[herdr-telegram-agents](https://github.com/permgps/herdr-telegram-agents) is MIT licensed and uses Go 1.25. It already offers per-agent topics, status, bidirectional messaging, question buttons, terminal reading, attachments, Git commands, agent creation, operators/observers and persistent agent/topic bindings.
 
-O código separa domínio, casos de uso e adaptadores. A integração com Herdr está concentrada em `internal/adapters/herdr/`, com montagem em `internal/compose/`, embora existam referências ao Herdr nos contratos, CLI, ambiente e instalador. A recomendação é preservar o núcleo Telegram e adaptar essa integração, sem reescrever o bot.
+The code separates domain, use cases and adapters. Herdr integration is concentrated in `internal/adapters/herdr/`, with composition in `internal/compose/`, although Herdr references also appear in contracts, the CLI, environment and installer. Preserve the Telegram core and adapt the integration instead of rewriting the bot.
 
-**A integração central usa o Maestri Wire oficial.** Sua documentação confirma listagem e criação de workspaces, feed por andar, interação com terminais, criação de andares, responsabilidades, consulta a presets e aplicação de partituras existentes. O protocolo usa HTTPS/WSS, pareamento e capabilities anunciadas pela instalação.
+**The central integration uses official Maestri Wire.** Its documentation confirms workspace listing and creation, per-floor feeds, terminal interaction, floor creation, roles, preset queries and application of existing partituras. The protocol uses HTTPS/WSS, pairing and capabilities advertised by the installation.
 
-O Wire é beta: é preciso verificar `protocolVersion` e capabilities no host real. A CLI desta sessão respondeu `maestri: only available inside Maestri terminals (MAESTRI_SOCKET not set).`; essa limitação da CLI não demonstra ausência do Wire. Ainda não houve pareamento nem teste de integração ao vivo.
+Wire is beta: verify `protocolVersion` and capabilities on the actual host. During the initial investigation, the CLI returned `maestri: only available inside Maestri terminals (MAESTRI_SOCKET not set).`; this CLI limitation does not establish that Wire is unavailable. Pairing and live integration testing have not yet been performed.
 
-O Guia do Maestri fornece o catálogo e exemplos, não substitui o contrato oficial. Alguns formatos do guia têm ressalvas de fidelidade; validar contra a versão real do host antes de anunciar compatibilidade. Verificar a licença do guia e dos recursos incorporados antes de redistribuí-los, preservando atribuição.
+The Maestri Guide provides the catalog and examples, not a replacement for the official contract. Some guide formats have fidelity caveats; validate against the actual host version before claiming compatibility. Check the licenses of the guide and incorporated resources before redistribution, preserving attribution.
 
-## Arquitetura recomendada
+## Recommended architecture
 
-`Um grupo Telegram ↔ um daemon maestri-tg ↔ Maestri Wire ↔ workspaces, andares e agentes habilitados`
+`One Telegram group ↔ one maestri-tg daemon ↔ Maestri Wire ↔ enabled workspaces, floors and agents`
 
-Manter um único consumidor de atualizações do Telegram por token. O catálogo e o planejador do Maestro ficam no mesmo aplicativo; não precisam de outro serviço. O modelo interpreta pedidos e produz uma definição estruturada; o executor valida essa definição e usa operações suportadas do Wire.
+Keep one Telegram update consumer per token. The catalog and Maestro planner belong in the same application; no separate service is needed. The model interprets requests and produces a structured definition; the executor validates that definition and uses supported Wire operations.
 
-Há duas formas de materializar uma partitura:
+There are two ways to materialize a partitura:
 
-| Opção | Vantagem | Limite |
+| Option | Benefit | Limitation |
 | --- | --- | --- |
-| Aplicar uma partitura já instalada no host via Wire | Preserva o comportamento de aplicação nativo. | Wire documenta listar/aplicar partituras, mas criar/editar a biblioteca continuam no host. |
-| Ler o exemplo ou gerar sua adaptação e criar seus componentes pelas operações do Wire | Permite criação automática por descrição sem uma importação manual a cada pedido. | Exige cobertura dos elementos do exemplo e validação de fidelidade; elementos sem API precisam de integração adicional. |
+| Apply a partitura already installed on the host through Wire | Preserves native application behavior. | Wire documents listing/applying partituras, but library creation/editing remains on the host. |
+| Read an example or generate its adaptation, then create its components through Wire | Supports creation from descriptions without importing every request manually. | Requires support for the example's components and fidelity validation; components without an API need additional integration. |
 
-Usar a primeira opção quando o template exato já estiver instalado e a segunda para exemplos externos e adaptações. Criar um arranjo no canvas e salvar uma nova partitura na biblioteca nativa são operações diferentes; a segunda precisa de um caminho suportado adicional para ser automática.
+Use the first option when the exact template is installed and the second for external examples and adaptations. Creating an arrangement on the canvas and saving a new partitura in the native library are different operations; automating the latter requires an additional supported path.
 
-Parear o daemon com o host e fixar a chave de segurança conforme o contrato oficial: SHA-256 da chave pública do certificado. Não copiar cegamente o cliente de exemplo do guia nem desativar a verificação TLS. O executor mantém a restrição de grupo, operadores e workspaces, mesmo quando seu token Wire tem papel owner.
+Pair the daemon with the host and pin its security key according to the official contract: SHA-256 of the certificate's public key. Do not blindly copy the guide's sample client or disable TLS verification. The executor preserves group, operator and workspace restrictions even when its Wire token has the owner role.
 
-## Plano de implementação
+## Implementation plan
 
-### 1. Validar Wire e os formatos do catálogo
+### 1. Validate Wire and catalog formats
 
-Consultar `/api/info` e capabilities da instalação pareada e montar uma matriz de capacidades: IDs, feed por andar, leitura de terminal, texto/teclas, status, perguntas, criação, foco e encerramento. Inventariar todo o catálogo do guia em um commit identificado e classificar os elementos necessários para reproduzir cada exemplo.
+Query `/api/info` and the paired installation's capabilities, then build a capability matrix: IDs, per-floor feeds, terminal reading, text/keys, status, questions, creation, focus and termination. Inventory the entire guide catalog at an identified commit and classify the components needed to reproduce each example.
 
-Validar dois workspaces, cada um com pelo menos dois andares, incluindo agentes com nomes iguais. Verificar também o comportamento quando outro workspace está aberto, quando um andar está inativo e quando a aplicação reinicia. Testes que enviam texto usam terminais de teste.
+Validate two workspaces, each with at least two floors, including agents sharing names. Also check behavior when another workspace is open, a floor is inactive and the application restarts. Tests that send text must use test terminals.
 
-Saída: matriz de compatibilidade do Wire e de todos os exemplos, com lacunas explícitas. Estados, perguntas e isolamento de andares dependem das capacidades e respostas reais do host, não de inferências sobre texto do terminal ou sobre a plataforma.
+Deliver a compatibility matrix for Wire and all examples, with explicit gaps. Status, questions and floor isolation depend on actual host capabilities and responses, not assumptions about terminal text or the platform.
 
-### 2. Criar o fork e a camada Maestri
+### 2. Create the fork and Maestri layer
 
-Criar o fork com o nome escolhido, preservar licença e atribuição MIT e configurar o upstream. Manter Go e as dependências existentes.
+Create the fork under the chosen name, preserve MIT licensing and attribution, and configure upstream. Keep Go and the existing dependencies.
 
-Adicionar `internal/adapters/maestri/`, reutilizando os contratos existentes onde servirem. Ajustar os contratos e a composição apenas onde a semântica do Maestri exigir. Adaptar configuração, diagnóstico, inicialização e instalação para não dependerem do ambiente ou marketplace Herdr. Evitar renomear todo o código na primeira entrega, facilitando incorporar correções do upstream.
+Add `internal/adapters/maestri/`, reusing existing contracts where suitable. Adjust contracts and composition only where Maestri semantics require it. Adapt configuration, diagnostics, startup and installation so they do not depend on the Herdr environment or marketplace. Avoid renaming the entire codebase in the first delivery, making upstream fixes easier to incorporate.
 
-Implementar o adaptador segundo o contrato Wire oficial, consultando capabilities antes de usar recursos opcionais. A CLI registrada continua disponível para operações locais comprovadas que não tenham equivalente Wire. Não presumir que o manifesto de plugin Herdr seja compatível com Maestri.
+Implement the adapter against the official Wire contract, checking capabilities before using optional features. The registered CLI remains available for verified local operations without a Wire equivalent. Do not assume the Herdr plugin manifest is compatible with Maestri.
 
-### 3. Tornar o roteamento independente de nomes e do workspace ativo
+### 3. Make routing independent of names and the active workspace
 
-Persistir o vínculo do tópico com instalação, workspace e andar. Dentro dele, vincular mensagens e botões aos IDs de terminal e sessão. A chave de mensagem inclui `chat_id` e `message_id`; a do tópico inclui `chat_id` e `message_thread_id`. Separar a identidade do terminal da geração da sessão/processo para impedir que um botão antigo atue sobre uma sessão substituta.
+Persist the topic's installation, workspace and floor binding. Within it, bind messages and buttons to terminal and session IDs. Message keys include `chat_id` and `message_id`; topic keys include `chat_id` and `message_thread_id`. Separate terminal identity from session/process generation so stale buttons cannot act on a replacement session.
 
-Nomes servem para apresentação; IDs resolvem o destino. Renomear um workspace ou andar atualiza o tópico sem perder o vínculo. Ao mover um terminal de andar, reconciliar seus metadados e invalidar controles antigos antes de aceitar comandos. Toda operação usa o destino explícito, nunca o workspace que estiver em foco. Sem coordenador disponível ou com destino ambíguo, mostrar um seletor sem enviar a mensagem.
+Names are for display; IDs resolve the destination. Renaming a workspace or floor updates the topic without losing its binding. When a terminal moves floors, reconcile its metadata and invalidate old controls before accepting commands. Every operation uses an explicit destination, never the focused workspace. If no coordinator is available or the destination is ambiguous, show a selector without sending the message.
 
-Versionar o estado e guardar backup antes de migrá-lo. Usar diretório de estado próprio para não misturar o fork com o bot Herdr existente.
+Version state and back it up before migrations. Use a dedicated state directory to avoid mixing the fork with an existing Herdr bot.
 
-### 4. Entregar o fluxo principal no Telegram
+### 4. Deliver the core Telegram flow
 
-Primeira entrega: conectar um grupo, descobrir workspaces/andares autorizados, criar um tópico por par e conversar com seus agentes pelo roteamento explícito acima. Reutilizar painel, fila e controle de frequência do upstream; adaptar persistência e reconciliação, pois a relação passa de um tópico por agente para vários agentes por tópico.
+First delivery: connect a group, discover authorized workspaces/floors, create one topic per pair, and talk to agents using the explicit routing above. Reuse the upstream dashboard, queue and rate control; adapt persistence and reconciliation as the relationship changes from one topic per agent to several agents per topic.
 
-Comandos propostos para o bot, ainda não implementados: `/workspaces`, `/floors`, `/agents` e `/partituras`. Preferir seletores com botões para evitar digitar nomes ambíguos. `/screen` e interrupções resolvem um agente específico; `/status` resume o andar com links para cada agente. Agregar progresso repetitivo e priorizar perguntas e conclusões para o tópico permanecer legível.
+The proposed commands are `/workspaces`, `/floors`, `/agents` and `/partituras`; these are now implemented. Prefer button selectors over typing ambiguous names. `/screen` and interruption commands resolve a specific agent; `/status` summarizes the floor with links to agents. Aggregate repetitive progress and prioritize questions and completions so topics remain readable.
 
-Manter a comunicação de agentes concorrente: uma tarefa longa em um tópico não bloqueia os demais. Serializar envios ao mesmo terminal. Deduplicar updates e callbacks do Telegram; quando a conexão cair após um envio de resultado incerto, informar a incerteza sem reenviar automaticamente a tarefa.
+Keep agent communication concurrent: a long task in one topic must not block others. Serialize sends to the same terminal. Deduplicate Telegram updates and callbacks; if a connection drops after a send with an uncertain result, report the uncertainty without automatically resending the task.
 
-### 5. Completar a equivalência funcional
+### 5. Complete functional parity
 
-Adicionar botões de perguntas e teclas, interrupção, anexos e mídia, Git no diretório real do agente, criação de agentes no andar escolhido, foco e fechamento, conforme a matriz de capacidades.
+Add question/key buttons, interruption, attachments and media, Git operations in the agent's actual directory, agent creation on the selected floor, focus and closing, according to the capability matrix.
 
-Preservar controles de notificações, presença, modo silencioso e operadores/observadores. Comandos específicos de um agente, como `/compact` ou `/model`, só são encaminhados quando fizerem sentido para aquele tipo de agente. Uma função indisponível deve aparecer como indisponível; não simular sucesso.
+Preserve notification controls, presence, quiet mode and operators/observers. Agent-specific commands such as `/compact` or `/model` should only be forwarded when appropriate for that agent type. An unavailable feature must be shown as unavailable; never simulate success.
 
-Anexos precisam de caminhos acessíveis pelo processo de destino. No Windows/WSL, validar tradução de caminhos. Em andares isolados, operações Git usam o checkout daquele andar, nunca um diretório global padrão.
+Attachments require paths accessible to the destination process. On Windows/WSL, validate path translation. On isolated floors, Git operations use that floor's checkout, never a global default directory.
 
-### 6. Implementar o Maestro e todo o catálogo do guia
+### 6. Implement Maestro and the complete guide catalog
 
-Importar o inventário completo das partituras e exemplos do guia, incluindo receitas que não sejam arquivos de partitura. Registrar caminho de origem, commit, categoria, descrição, componentes, parâmetros e dependências. Usar busca textual por nome/descrição como base; IA interpreta a intenção e adapta o exemplo escolhido. Não é necessário um banco vetorial na primeira versão.
+Import the full inventory of partituras and guide examples, including recipes that are not partitura files. Record source path, commit, category, description, components, parameters and dependencies. Start with text search by name/description; AI interprets intent and adapts the selected example. A vector database is unnecessary for the first version.
 
-Oferecer três caminhos no mesmo tópico Maestro:
+Offer three paths in the same Maestro topic:
 
-- **Aplicar um exemplo:** “Monte a partitura de revisão no Projeto Demo, andar Revisão”.
-- **Adaptar um exemplo:** “Use essa partitura, mas com dois agentes Codex, instruções em português e uma nota com os critérios de aceite”.
-- **Criar pela descrição:** “Monte uma equipe para investigar um erro de pagamento, com implementador, revisor e portal da aplicação”.
+- **Apply an example:** “Set up the review partitura in Demo Project, on the Review floor.”
+- **Adapt an example:** “Use this partitura, but with two Codex agents, instructions in English and a note containing acceptance criteria.”
+- **Create from a description:** “Build a team to investigate a payment error, with an implementer, a reviewer and an application portal.”
 
-Resolver workspace, andar, diretório e presets reais antes de executar. Pedidos claros de criação autorizam as operações aditivas descritas; não exigir um segundo aceite rotineiro. Se o usuário pedir apenas uma prévia, gerar a proposta sem materializar. Não iniciar trabalho dos agentes quando o pedido for somente montar a equipe.
+Resolve actual workspaces, floors, directories and presets before execution. Clear creation requests authorize the described additive operations; do not require a routine second approval. If the user asks only for a preview, generate a proposal without materializing it. Do not start agent work when the request is only to assemble a team.
 
-Converter cada pedido em uma definição validada de nós, responsabilidades, conexões, notas, portais e parâmetros do ambiente. Reaproveitar recursos compatíveis já existentes. Usar identificadores de execução e `mutationId` nas rotas que o suportam; nas demais, reconciliar o resultado antes de repetir. Criar primeiro dependências, aguardar andares pendentes, depois materializar os componentes e verificar o resultado.
+Convert each request into a validated definition of nodes, roles, connections, notes, portals and environment parameters. Reuse compatible existing resources. Use execution identifiers and `mutationId` on routes that support it; reconcile results before repeating operations elsewhere. Create dependencies first, wait for pending floors, then materialize components and verify the result.
 
-Preservar o exemplo original e guardar a adaptação como variante identificada, com sua origem e descrição das alterações. Uma atualização do guia não sobrescreve variantes do usuário. Modelos, presets e credenciais devem vir da instalação; exemplos não autorizam criar credenciais nem ativar providers inexistentes.
+Preserve the original example and save adaptations as identified variants with provenance and a description of changes. Guide updates must not overwrite user variants. Models, presets and credentials come from the installation; examples do not authorize creating credentials or enabling nonexistent providers.
 
-Receitas de hooks, rotinas e ambientes precisam de contratos próprios e operações verificadas, não execução automática do texto do guia. Tratar o conteúdo do catálogo como dados, sem permitir que suas instruções alterem permissões ou destinos. Alterações em responsabilidades já usadas exigem avaliar o reinício dos terminais; preferir uma nova responsabilidade para uma adaptação local.
+Hook, routine and environment recipes need their own contracts and verified operations, not automatic execution of guide text. Treat catalog content as data; its instructions cannot change permissions or destinations. Changes to roles already in use require evaluating terminal restarts; prefer a new role for a local adaptation.
 
-Para elementos sem API suportada, implementar e validar a integração necessária ou registrar o exemplo como bloqueado com motivo exato. Não omitir elementos nem marcar a cobertura completa enquanto houver exemplos pendentes. A aplicação de uma seleção curada pode ser um marco intermediário, mas não encerra o requisito de todas as partituras e exemplos.
+For components without a supported API, implement and validate the necessary integration or mark the example as blocked with an exact reason. Do not omit components or claim complete coverage while examples remain pending. Applying a curated selection may be an intermediate milestone, but does not satisfy the requirement to cover every partitura and example.
 
-Ao concluir uma criação, o Maestro envia o link do tópico `Workspace · Andar`, os agentes criados e eventuais pendências. Uma falha parcial preserva o registro dos recursos já criados para retomada sem duplicação; limpeza nunca remove recursos anteriores ao pedido.
+After creation, Maestro sends the `Workspace · Floor` topic link, the created agents and any outstanding steps. A partial failure preserves the record of created resources for resuming without duplication; cleanup must never remove resources that predate the request.
 
-### 7. Validar, empacotar e documentar
+### 7. Validate, package and document
 
-Reutilizar os testes e a CI existentes; adicionar um adaptador Maestri simulado, testes de roteamento entre agentes do mesmo tópico e casos de criação/adaptação. Executar os testes de integração reais com dois workspaces e dois andares antes da primeira release. Validar o catálogo inteiro contra o esquema suportado e verificar no host os diferentes tipos de componente e fluxo, mantendo um relatório de cobertura por exemplo.
+Reuse existing tests and CI; add a simulated Maestri adapter, routing tests for agents sharing a topic, and creation/adaptation cases. Run live integration tests with two workspaces and two floors before the first release. Validate the entire catalog against the supported schema and verify different component types and flows on the host, maintaining a per-example coverage report.
 
-Empacotar primeiro para a instalação Windows/WSL usada aqui, documentando em qual lado o daemon e o Maestri executam. Incluir configuração assistida, diagnóstico, inicialização automática pelo mecanismo suportado e reinicialização com estado preservado.
+Package first for Windows/WSL, documenting which side runs the daemon and Maestri. Include guided configuration, diagnostics, automatic startup through a supported mechanism, and restarting with state preserved.
 
-Rollback: parar o daemon do fork e restaurar seu binário/configuração/estado anterior. Manter o upstream como referência para atualizações de Telegram e correções.
+Rollback: stop the fork's daemon and restore its previous binary/configuration/state. Keep upstream as a reference for Telegram updates and fixes.
 
-## Critérios de aceite
+## Acceptance criteria
 
-- Existe um único grupo com um tópico por workspace/andar, sem tópicos individuais de agentes.
-- Agentes com nomes iguais em escopos diferentes recebem apenas mensagens explicitamente resolvidas para seus IDs.
-- Respostas e botões atingem o agente autor correto, mesmo quando vários agentes publicam simultaneamente no mesmo tópico.
-- Mensagens sem destinatário seguem o coordenador do andar; ausência ou ambiguidade não provoca envio a um agente arbitrário.
-- Trocar o workspace ativo no desktop não altera o destino das mensagens.
-- Um usuário não autorizado ou observador não consegue enviar comandos, inclusive por botões antigos.
-- Reiniciar o daemon preserva os vínculos e não duplica tópicos nem reenvia prompts já processados.
-- Perder conexão marca o escopo como indisponível, sem interpretar todos os agentes como encerrados.
-- Andares isolados preservam seu diretório correto para anexos e Git.
-- Um botão de uma sessão encerrada não controla uma nova sessão no mesmo terminal.
-- O painel mostra quais workspaces/andares estão habilitados, conectados ou suspensos.
-- Tokens ficam fora dos logs; a redação de segredos do upstream é preservada, sem presumir que ela reconheça todo conteúdo sensível.
-- Fechar um terminal exige confirmação vinculada ao destino e à sessão corretos.
-- Todo exemplo do guia no commit escolhido aparece no catálogo com origem, descrição e resultado de compatibilidade; a cobertura completa exige materialização validada, sem descarte silencioso de componentes.
-- O usuário consegue aplicar um exemplo, adaptar um exemplo e criar uma equipe pela descrição no tópico Maestro.
-- Repetir um update Telegram ou retomar uma criação interrompida não duplica workspace, andar, equipe ou tópico.
-- Adaptações preservam os originais e usam presets disponíveis, sem alterar equipes alheias ao pedido.
-- O resultado distingue arranjo criado no canvas de partitura salva na biblioteca nativa.
+- One group exists with one topic per workspace/floor, without individual agent topics.
+- Agents sharing names across scopes receive only messages explicitly resolved to their IDs.
+- Replies and buttons reach the correct originating agent, even when several agents post simultaneously in the same topic.
+- Messages without recipients go to the floor coordinator; absence or ambiguity never sends them to an arbitrary agent.
+- Switching the active desktop workspace does not change message destinations.
+- Unauthorized users and observers cannot send commands, including through old buttons.
+- Restarting the daemon preserves bindings without duplicating topics or resending processed prompts.
+- Losing connectivity marks the scope unavailable without treating all agents as terminated.
+- Isolated floors preserve the correct directory for attachments and Git.
+- A button from a terminated session cannot control a new session in the same terminal.
+- The dashboard shows which workspaces/floors are enabled, connected or suspended.
+- Tokens stay out of logs; upstream secret redaction is preserved without assuming it recognizes every kind of sensitive content.
+- Closing a terminal requires confirmation bound to the correct target and session.
+- Every guide example at the chosen commit appears in the catalog with provenance, a description and a compatibility result; full coverage requires validated materialization without silently discarding components.
+- Users can apply an example, adapt an example and create a team from a description in Maestro.
+- Repeating a Telegram update or resuming interrupted creation does not duplicate workspaces, floors, teams or topics.
+- Adaptations preserve originals and use available presets without modifying teams outside the request.
+- Results distinguish arrangements created on the canvas from partituras saved in the native library.
 
-## Ordem e esforço
+## Order and effort
 
-Fazer primeiro a validação Wire e o inventário completo do guia, depois o grupo com tópicos por andar, o Maestro criador e a cobertura integral do catálogo, em paralelo à conclusão dos recursos do original quando houver independência técnica. Estimar a entrega após identificar os componentes do guia que exigem integrações além do Wire.
+Validate Wire and inventory the entire guide first, followed by the group with floor topics, the Maestro creator and full catalog coverage. Complete original features alongside these where technically independent. Estimate delivery after identifying guide components that require integrations beyond Wire.
 
-O primeiro marco demonstrável é: **em um único grupo Telegram, conversar com agentes de dois workspaces pelos tópicos de seus andares e criar uma equipe a partir de uma descrição**. Esse marco valida a proposta; a conclusão do fork exige a equivalência funcional, todo o catálogo e os critérios acima.
+The first demonstrable milestone is: **in one Telegram group, talk to agents from two workspaces through their floor topics and create a team from a description**. This milestone validates the concept; completing the fork requires functional parity, the full catalog and the criteria above.
 
-## Fontes consultadas
+## Sources
 
-- [README e recursos do upstream](https://github.com/permgps/herdr-telegram-agents/blob/main/README.md)
-- [Arquitetura e desenvolvimento](https://github.com/permgps/herdr-telegram-agents/blob/main/docs/development.md)
-- [Adaptador Herdr](https://github.com/permgps/herdr-telegram-agents/blob/main/internal/adapters/herdr/gateway.go)
-- [Identidade dos agentes](https://github.com/permgps/herdr-telegram-agents/blob/main/internal/domain/agent.go) e [persistência dos tópicos](https://github.com/permgps/herdr-telegram-agents/blob/main/internal/domain/mapping.go)
-- Skills locais `maestri`, `maestri-workspace` e `maestri-manager`, confrontadas com a tentativa de diagnóstico da CLI instalada.
-- [Maestri Wire, contrato oficial](https://www.themaestri.app/pt-br/docs/wire)
-- [Guia do Maestri](https://github.com/arthurspk/guiadomaestri) e [limites de importação/exportação documentados pelo guia](https://github.com/arthurspk/guiadomaestri/blob/main/docs/10-importar-e-exportar.md)
-- [Tópicos de fórum do Telegram](https://core.telegram.org/api/forum)
+- [Upstream README and features](https://github.com/permgps/herdr-telegram-agents/blob/main/README.md)
+- [Architecture and development](https://github.com/permgps/herdr-telegram-agents/blob/main/docs/development.md)
+- [Herdr adapter](https://github.com/permgps/herdr-telegram-agents/blob/main/internal/adapters/herdr/gateway.go)
+- [Agent identity](https://github.com/permgps/herdr-telegram-agents/blob/main/internal/domain/agent.go) and [topic persistence](https://github.com/permgps/herdr-telegram-agents/blob/main/internal/domain/mapping.go)
+- Local `maestri`, `maestri-workspace` and `maestri-manager` skills, checked against the installed CLI diagnostic attempt.
+- [Maestri Wire, official contract](https://www.themaestri.app/pt-br/docs/wire)
+- [Maestri Guide](https://github.com/arthurspk/guiadomaestri) and its [documented import/export limitations](https://github.com/arthurspk/guiadomaestri/blob/main/docs/10-importar-e-exportar.md)
+- [Telegram forum topics](https://core.telegram.org/api/forum)
 
-Consulta em 13/09/2026. Histórico e licença do upstream preservados. A integração Maestri e o catálogo foram implementados; os limites atuais e a validação ao vivo pendente estão no [guia de configuração](maestri-relay-setup.md).
+Sources consulted on September 13, 2026. Upstream history and licensing are preserved. Maestri integration and the catalog have been implemented; current limitations and outstanding live validation are described in the [setup guide](maestri-relay-setup.md).

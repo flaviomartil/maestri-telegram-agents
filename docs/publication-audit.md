@@ -1,28 +1,28 @@
-# Credenciais e publicação
+# Credentials and publication
 
-Auditoria local em 13/09/2026. Não foram encontradas credenciais reais no código atual ou no histórico Git analisado. Isso é o resultado de uma inspeção, não uma garantia de ausência de todo segredo possível.
+Local audit performed on September 13, 2026. No real credentials were found in the current code or inspected Git history. This is an inspection result, not a guarantee that every possible secret is absent.
 
-## O que foi verificado
+## What was checked
 
-- Gitleaks 8.30.1, com regras padrão e valores sensíveis ocultados nos relatórios: diretório atual e histórico de todas as refs, abrangendo 116 commits do upstream.
-- Nomes de arquivos de credenciais, caminhos pessoais e identificadores de projetos nos arquivos candidatos a publicação, incluindo os ainda não rastreados pelo Git.
-- Carregamento de `TELEGRAM_BOT_TOKEN`, `MAESTRI_WIRE_TOKEN` e `MAESTRI_LLM_KEY` pelo ambiente, sem tokens embutidos na configuração do Relay.
+- Gitleaks 8.30.1, using default rules and redacted reports: the working directory and history across all refs, covering 116 upstream commits.
+- Credential filenames, personal paths and project identifiers in files intended for publication, including untracked files.
+- Loading `TELEGRAM_BOT_TOKEN`, `MAESTRI_WIRE_TOKEN` and `MAESTRI_LLM_KEY` from the environment, without tokens embedded in Relay configuration.
 
-O scanner encontrou um único caso, tanto no diretório quanto no histórico: `internal/domain/redact_test.go`, linhas 34–35, introduzido no commit upstream `1bcbfa18f00d5dfb4d942753d4c2a770079f4f55`. É uma fixture de teste de redação com marcador de chave privada e conteúdo truncado, não uma chave criptográfica utilizável. O resultado foi inspecionado, não suprimido por uma regra ampla. Outros tokens de teste são valores sintéticos usados com servidores simulados.
+The scanner found one case in both the working directory and history: `internal/domain/redact_test.go`, lines 34–35, introduced by upstream commit `1bcbfa18f00d5dfb4d942753d4c2a770079f4f55`. This is a redaction test fixture containing a private-key marker and truncated content, not a usable cryptographic key. The finding was inspected rather than suppressed with a broad rule. Other test tokens are synthetic values used with simulated servers.
 
-A inspeção não autenticou tokens contra provedores nem consultou cofres de credenciais. Relatórios brutos e artefatos internos da auditoria ficam fora dos arquivos publicáveis.
+The inspection did not authenticate tokens against providers or access credential vaults. Raw reports and internal audit artifacts are kept outside the files intended for publication.
 
-## Preparação feita
+## Preparation completed
 
-Os exemplos próprios usam nomes genéricos de projeto. O caminho pessoal da máquina foi removido da documentação. O `.gitignore` agora cobre `.env`, `wire-token`, `relay.json`, configuração local, diretórios de estado/catálogo, partituras exportadas e instruções/memórias locais de agentes. O comportamento de ignorar não remove arquivos já rastreados; nenhum desses arquivos de credenciais estava rastreado nesta inspeção.
+Fork-specific examples use generic project names. The machine's personal path was removed from documentation. `.gitignore` now covers `.env`, `wire-token`, `relay.json`, local configuration, state/catalog directories, exported partituras, and local agent instructions/memory. Ignoring files does not remove tracked files; none of these credential files was tracked during this inspection.
 
-Cada usuário fornece seu próprio bot Telegram, pareamento Wire e, opcionalmente, provedor de IA. O padrão salva configuração e pareamento fora da pasta do repositório. O estado contém mensagens, planos e vínculos do usuário e também deve permanecer privado.
+Each user supplies their own Telegram bot, Wire pairing and optional AI provider. The defaults store configuration and pairing outside the repository directory. State contains user messages, plans and bindings, and must also remain private.
 
-Código e licença MIT do upstream foram preservados. O Guia do Maestri é baixado localmente em revisão fixada: seu conteúdo e as partituras geradas não são redistribuídos pelo fork, pois uma licença de redistribuição do guia não foi localizada.
+The upstream code and MIT license were preserved. The Maestri Guide is downloaded locally at a pinned revision: its content and generated partituras are not redistributed by this fork because no redistribution license was found for the guide.
 
-## Repetir antes de publicar uma nova versão
+## Repeat before publishing a new version
 
-Com Gitleaks instalado, execute na raiz, mantendo os relatórios fora do repositório:
+With Gitleaks installed, run from the repository root and keep reports outside the repository:
 
 ```sh
 gitleaks git . --log-opts='--all' --redact --report-format json --report-path /tmp/relay-history.json
@@ -31,4 +31,4 @@ git status --short
 git diff --check
 ```
 
-O caso sintético descrito acima faz o Gitleaks retornar código 1; investigue qualquer diferença de arquivo, linha ou regra. Não interprete automaticamente todo resultado como falso positivo. Este documento não registra publicação: criação do repositório remoto e envio ao GitHub são etapas separadas.
+The synthetic case above causes Gitleaks to exit with code 1; investigate any change in file, line or rule. Do not automatically classify every finding as a false positive. This document records the pre-publication audit; creating the remote repository and pushing to GitHub are separate operations.

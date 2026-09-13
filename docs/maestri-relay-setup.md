@@ -1,35 +1,35 @@
-# Usar o Maestri Relay
+# Using Maestri Relay
 
-O Relay conecta um grupo Telegram a uma instalação Maestri. Cria o tópico `Maestro` e tópicos `Workspace · Andar` para os workspaces autorizados. Agentes do mesmo andar compartilham o tópico; responder ao card de um agente seleciona o destinatário por ID. Texto sem resposta exige um único coordenador ativo no andar.
+Relay connects one Telegram group to one Maestri installation. It creates a `Maestro` topic and `Workspace · Floor` topics for authorized workspaces. Agents on the same floor share a topic; replying to an agent's card selects the recipient by ID. Messages without a reply require exactly one active coordinator on the floor.
 
-## Preparar e conectar
+## Set up and connect
 
-Requer Go 1.25, Make, Maestri com Wire habilitado e um bot administrador de supergrupo Telegram com tópicos e permissão de gerenciá-los. Instale no host os presets dos agentes utilizados pelas partituras. Para os testes com detector de race, tenha também um compilador C.
+Requires Go 1.25, Make, Maestri with Wire enabled, and a Telegram bot that is an administrator of a supergroup with topics and permission to manage them. Install the agent presets used by your partituras on the host. A C compiler is also required for race detector tests.
 
 ```sh
 make build
 bin/maestri-tg init
 ```
 
-Edite `~/.config/maestri-relay/config.json`; `init` cria um esqueleto sem sobrescrever arquivos existentes. Preencha:
+Edit `~/.config/maestri-relay/config.json`; `init` creates a configuration skeleton without overwriting existing files. Set:
 
-| Campo | Valor |
+| Field | Value |
 | --- | --- |
-| `wireURL` | Origem HTTPS exibida pelo host Wire, acessível pela máquina do Relay. |
-| `wirePin` | SHA-256 da chave pública SPKI exibida pelo host, em hexadecimal ou base64. Confira diretamente no Maestri. |
-| `chatID` | ID negativo do único supergrupo Telegram. |
-| `operators` | IDs numéricos positivos dos usuários que podem controlar os agentes. |
-| `observers` | IDs de usuários que podem consultar `/help` e `/status` no General. |
-| `workspaces` | IDs dos workspaces autorizados. `[]` não autoriza nenhum; `["*"]` autoriza todos e permite criar novos. |
-| `stateDir` | Diretório absoluto para estado e pareamento, exclusivo deste grupo/host. |
-| `catalogDir` | Diretório absoluto para o catálogo baixado do guia. |
-| `pollSeconds` | Intervalo de consulta; padrão 5 segundos. |
-| `llmURL` | URL base compatível com OpenAI, por exemplo `https://api.openai.com/v1`; o cliente acrescenta `/chat/completions`. Opcional para aplicar modelos sem adaptação. |
-| `llmModel` | Identificador de modelo disponível no provedor configurado. |
+| `wireURL` | The HTTPS origin shown by the Wire host, reachable from the machine running Relay. |
+| `wirePin` | SHA-256 of the host's SPKI public key, in hexadecimal or base64. Verify it directly in Maestri. |
+| `chatID` | The negative ID of the single Telegram supergroup. |
+| `operators` | Positive numeric IDs of users allowed to control agents. |
+| `observers` | IDs of users allowed to use `/help` and `/status` in General. |
+| `workspaces` | Allowed workspace IDs. `[]` allows none; `["*"]` allows all and permits creating new ones. |
+| `stateDir` | Absolute path for state and pairing, dedicated to this group/host. |
+| `catalogDir` | Absolute path for the downloaded guide catalog. |
+| `pollSeconds` | Polling interval; defaults to 5 seconds. |
+| `llmURL` | OpenAI-compatible base URL, such as `https://api.openai.com/v1`; the client appends `/chat/completions`. Optional when applying templates without adaptation. |
+| `llmModel` | A model identifier available from the configured provider. |
 
-Forneça `TELEGRAM_BOT_TOKEN` no ambiente local do processo. Para IA, forneça `MAESTRI_LLM_KEY` conforme o provedor. Não coloque segredos no JSON nem no repositório.
+Set `TELEGRAM_BOT_TOKEN` in the process environment. For AI, set `MAESTRI_LLM_KEY` as required by your provider. Keep secrets out of the JSON configuration and repository.
 
-Ative o pareamento no Maestri e execute:
+Enable pairing in Maestri and run:
 
 ```sh
 bin/maestri-tg pair
@@ -38,65 +38,67 @@ bin/maestri-tg catalog-sync
 bin/maestri-tg run
 ```
 
-`pair` solicita o código de seis dígitos e salva o token em `stateDir/wire-token`, com permissão `0600`. Alternativamente, forneça `MAESTRI_WIRE_TOKEN` no ambiente. Use pareamento `owner` para criação e controle. `doctor` verifica conexão, protocolo e papel; a compatibilidade de cada recurso depende das capabilities anunciadas pelo host.
+`pair` asks for the six-digit code and saves the token to `stateDir/wire-token` with `0600` permissions. Alternatively, set `MAESTRI_WIRE_TOKEN` in the environment. Use an `owner` pairing for creation and control. `doctor` checks connectivity, protocol and role; each feature depends on the capabilities advertised by the host.
 
-`run` mantém o daemon no terminal; use seu supervisor habitual para operação contínua. Execute somente um consumidor Telegram por token. O lock local impede dois processos usando o mesmo `stateDir`, mas não protege instalações em máquinas ou diretórios diferentes. Os instaladores Herdr do upstream não instalam o Relay.
+`run` keeps the daemon running in the terminal; use your usual process supervisor for continuous operation. Run only one Telegram update consumer per token. The local lock prevents two processes from sharing `stateDir`, but does not protect installations on different machines or in different directories. The upstream Herdr installers do not install Relay.
 
-## Comandos no Telegram
+## Telegram commands
 
-| Comando | Comportamento |
+| Command | Behavior |
 | --- | --- |
-| `/status`, `/workspaces`, `/floors` | Lista os andares conhecidos com links para tópicos. |
-| `/agents` | Publica cards dos agentes do andar; responda ao card desejado. |
-| `/screen` | Mostra a prévia textual disponível no feed. |
-| `/focus` | Revela o nó no Maestri. |
-| `/stop`, `/interrupt` | Envia Escape ou Ctrl+C ao terminal escolhido. |
-| `/close` | Pede confirmação antes de encerrar o processo. |
-| `/mute`, `/unmute` | Controla notificações daquele andar. |
-| `/partituras descrição` | Busca no catálogo inteiro; mostra até 12 resultados por consulta. |
-| `/apply ID` | Aplica o exemplo no andar do tópico atual. |
-| `/adapt ID descrição` | Adapta o exemplo usando IA e cria a equipe. |
-| `/create descrição` | Cria uma equipe por descrição. |
-| `/preview descrição` | Devolve um plano JSON, sem criar recursos. |
-| `/resume ID` | Retoma uma criação usando os resultados já registrados. |
-| `/bind workspace-id floor-id\|ground topic-id` | Recupera manualmente um vínculo quando a criação de tópico teve resposta incerta. |
+| `/status`, `/workspaces`, `/floors` | List known floors with links to their topics. |
+| `/agents` | Post cards for the floor's agents; reply to the desired card. |
+| `/screen` | Show the text preview available in the feed. |
+| `/focus` | Reveal the node in Maestri. |
+| `/stop`, `/interrupt` | Send Escape or Ctrl+C to the selected terminal. |
+| `/close` | Ask for confirmation before terminating the process. |
+| `/mute`, `/unmute` | Control notifications for that floor. |
+| `/partituras description` | Search the entire catalog; show up to 12 results per query. |
+| `/apply ID` | Apply the example on the current topic's floor. |
+| `/adapt ID description` | Adapt an example with AI and create the team. |
+| `/create description` | Create a team from a description. |
+| `/preview description` | Return a JSON plan without creating resources. |
+| `/resume ID` | Resume a creation job using previously recorded results. |
+| `/bind workspace-id floor-id\|ground topic-id` | Manually recover a topic binding after an uncertain topic creation response. |
 
-No `Maestro`, por exemplo: “Crie no workspace Projeto Demo um andar Revisão com um coordenador e dois revisores Codex”. Para criar workspace novo, informe também o diretório explicitamente e autorize `"*"` na configuração. Nos tópicos de andar, o destino fica preso ao tópico; pedidos para mudar o destino devem usar Maestro.
+In `Maestro`, for example: “Create a Review floor in the Demo Project workspace with one coordinator and two Codex reviewers.” To create a workspace, also specify its directory explicitly and allow `"*"` in the configuration. Inside floor topics, the destination is fixed to that topic; use Maestro to request a different destination.
 
-Perguntas e pedidos de proposta são tratados pelo planejador sem criação. Operadores podem criar recursos diretamente por descrição; o Relay valida o plano e só permite presets instalados. Prompts, descrições, nomes de workspaces e conteúdo do exemplo adaptado são enviados ao provedor de IA configurado. Arquivos de até 8 MiB podem ser enviados ao agente escolhido, incluindo legenda.
+The planner handles questions and requests for proposals without creating resources. Operators can create resources directly from descriptions; Relay validates the plan and only permits installed presets. Prompts, descriptions, workspace names and the example being adapted are sent to the configured AI provider. Files up to 8 MiB can be sent to the selected agent, including captions.
 
-## Catálogo e portais
+Bot and CLI messages currently use Brazilian Portuguese. Natural-language requests can be written in English. The default ground-floor topic label is `Térreo`.
 
-Fonte: [Guia do Maestri](https://github.com/arthurspk/guiadomaestri), commit `24ccb073c761864d3352552053a38240f70224a1`. `catalog-sync` baixa a revisão fixada: 257 partituras e 115 referências, total de 372 entradas. Não acompanha mudanças futuras até atualizar e validar a revisão.
+## Catalog and portals
 
-Todas as partituras dessa revisão são convertidas, preservando os componentes de terminal, nota e portal, suas responsabilidades, posições e ligações. Comandos de lançamento do guia são substituídos pelos presets instalados. As outras 115 entradas ficam disponíveis como notas de referência, incluindo receitas, prompts, instruções e exemplos de temas/workspaces. Isso não implementa execução automática dessas receitas ou importação de configurações de tema/workspace.
+Source: [Maestri Guide](https://github.com/arthurspk/guiadomaestri), commit `24ccb073c761864d3352552053a38240f70224a1`. `catalog-sync` downloads this pinned revision: 257 partituras and 115 references, totaling 372 entries. Future guide changes are not included until the revision is updated and validated.
 
-Terminais e notas são criados pelas rotas Wire. Portais usam a aplicação nativa de uma partitura instalada. Para preparar toda a biblioteca:
+All partituras in this revision are converted, preserving terminal, note and portal components, roles, positions and connections. Launch commands from the guide are replaced with installed presets. The other 115 entries are available as reference notes, including recipes, prompts, instructions and theme/workspace examples. This does not implement automatic recipe execution or import theme/workspace settings.
+
+Terminals and notes are created through Wire endpoints. Portals use native application of an installed partitura. To prepare the entire library:
 
 ```sh
 bin/maestri-tg catalog-export --out /tmp/Relay.maestripartituras
 ```
 
-Esse comando requer Wire pareado e presets instalados compatíveis com todos os agentes do catálogo. Importe o arquivo pela biblioteca de partituras do Maestri. Depois, `/apply ID` aplica os modelos. Se uma variante com portais ainda não estiver instalada, o bot entrega `Relay.maestripartitura` e o ID de criação: importe e execute `/resume ID`. Adaptar a composição ou alterar um preset pode gerar uma variante que requer nova importação.
+This command requires a paired Wire host and installed presets compatible with every agent in the catalog. Import the file through Maestri's partitura library. Then `/apply ID` applies the templates. If a variant containing portals is not installed, the bot supplies `Relay.maestripartitura` and a creation job ID: import it, then run `/resume ID`. Adapting the composition or changing a preset can produce a variant requiring another import.
 
-A API Wire documenta listar/aplicar partituras, mas não importar, salvar ou editar a biblioteca nem criar um portal diretamente. Logo, criação inteiramente automática de toda variante com portais ainda não é possível por essa API. O guia não apresentou uma licença de redistribuição; seu conteúdo é baixado localmente, sem ser incorporado a este fork. Preserve a atribuição e verifique direitos antes de redistribuir os arquivos gerados.
+The documented Wire API can list/apply partituras, but cannot import, save or edit the library, or create a portal directly. Fully automatic creation of every portal variant is therefore not yet possible through this API. No redistribution license was found for the guide; its content is downloaded locally instead of bundled with this fork. Preserve attribution and check redistribution rights before sharing generated files.
 
-## Planos pela CLI e recuperação
+## CLI plans and recovery
 
-Todos os comandos aceitam `--config PATH`. Liste os IDs com `catalog-list --query descrição`. Um plano baseado em catálogo pode ser gerado sem Wire:
+All commands accept `--config PATH`. List IDs with `catalog-list --query description`. A catalog-based plan can be generated without Wire:
 
 ```sh
-bin/maestri-tg plan --template ID --workspace WORKSPACE_ID --floor FLOOR_ID --out /tmp/equipe.json
-bin/maestri-tg apply --plan /tmp/equipe.json --job revisao-001
+bin/maestri-tg plan --template ID --workspace WORKSPACE_ID --floor FLOOR_ID --out /tmp/team.json
+bin/maestri-tg apply --plan /tmp/team.json --job review-001
 ```
 
-Omita `--floor` para o térreo. Para planejamento por IA, use `plan --request "descrição"`; essa operação consulta os workspaces, andares e presets no Wire, mas não cria recursos. Revise o JSON. Um plano com `action: "preview"` precisa ser explicitamente alterado para `action: "create"` antes de `apply`; respostas e outras ações são recusadas.
+Omit `--floor` for the ground floor. For AI planning, use `plan --request "description"`; this reads workspaces, floors and presets from Wire without creating resources. Review the JSON. A plan with `action: "preview"` must explicitly be changed to `action: "create"` before `apply`; answers and other actions are rejected.
 
-Mantenha o mesmo `--job` e o mesmo plano para retomar uma criação. O executor registra cada etapa antes de enviar a mutação e cada resultado recebido antes de avançar. Um timeout após envio deixa a etapa incerta e bloqueia repetição automática. `mutationId` identifica a operação; não é tratado como garantia de idempotência. Nessa situação, confira o canvas e o registro `stateDir/relay.json` antes de qualquer recuperação manual. Não troque de job para contornar a incerteza, pois isso pode duplicar recursos.
+Keep the same `--job` and plan when resuming a creation. The executor records each step before sending its mutation and each received result before continuing. A timeout after sending leaves the step uncertain and blocks automatic retries. `mutationId` identifies the operation; it is not treated as an idempotency guarantee. In this situation, inspect the canvas and `stateDir/relay.json` before manual recovery. Do not switch job IDs to bypass uncertainty, as this may duplicate resources.
 
-Novos andares são criados sem isolamento Git; não há opção de criação de branch nesta versão. Cada execução de provisionamento tem prazo de cinco minutos. A verificação confirma IDs dos nós criados diretamente; na aplicação nativa, confirma novos nós por tipo em relação ao canvas anterior. Ela não comprova fidelidade visual ou identidade dos recursos diante de edições concorrentes no host.
+New floors are created without Git isolation; this version has no branch creation option. Each provisioning execution has a five-minute deadline. Verification confirms the IDs of directly created nodes; native application checks new nodes by type against the previous canvas. It does not prove visual fidelity or resource identity during concurrent host edits.
 
-## Validação e pendências
+## Validation and remaining work
 
 ```sh
 make test
@@ -104,12 +106,12 @@ make build
 make lint
 ```
 
-`make lint` requer Staticcheck compatível com Go 1.25 e verifica cinco alvos de compilação. Para validar o corpus completo já baixado:
+`make lint` requires Staticcheck compatible with Go 1.25 and checks five build targets. To validate the complete downloaded corpus:
 
 ```sh
 MAESTRI_GUIDE_TEST_DIR="$HOME/.cache/maestri-relay/guide/24ccb073c761864d3352552053a38240f70224a1" go test -v ./internal/adapters/maestri -run TestFullGuideCatalog
 ```
 
-Os testes cobrem TLS/SPKI, permissões, roteamento por IDs, respostas antigas, callbacks adulterados, falhas de persistência, retomada sem repetição e conversão do catálogo. Não houve pareamento nem envio de mensagens a um Telegram/Maestri real nesta entrega. Ainda é necessário validar dois workspaces com múltiplos andares, agentes homônimos, mudanças de foco e reinício no host utilizado.
+Tests cover TLS/SPKI, permissions, ID-based routing, stale replies, forged callbacks, persistence failures, resuming without replay, and catalog conversion. No pairing or messages to a real Telegram/Maestri installation were performed for this implementation. Two workspaces with multiple floors, agents sharing names, focus changes and host restarts still need live validation.
 
-O Relay ainda não reproduz todo o conjunto Herdr: histórico completo/emulação do terminal, comandos Git, agregação de álbuns, painel fixado, presença e todas as preferências do upstream ficam pendentes. `/screen` mostra uma prévia. A API fornece `epoch`, mas não uma precondição documentada de geração para cada processo reiniciado com o mesmo ID. Updates Telegram preservam a fila remota no início; o buffer de recepção permanece em memória, sem uma caixa de entrada durável. Mensagens já registradas são deduplicadas por até 48 horas; uma falha depois do registro e antes da entrega pode exigir reenvio explícito.
+Relay does not yet reproduce the full Herdr feature set: complete terminal history/emulation, Git commands, album aggregation, a pinned dashboard, presence and all upstream preferences remain pending. `/screen` shows a preview. The API provides `epoch`, but no documented per-process generation precondition for restarts that reuse the same ID. Telegram updates preserve the remote queue on startup; the receive buffer remains in memory without a durable inbox. Recorded messages are deduplicated for up to 48 hours; a failure after recording but before delivery may require an explicit resend.

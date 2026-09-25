@@ -107,6 +107,18 @@ func (f *bridgeFixture) add(t *testing.T, pane, term, name string, st domain.Sta
 	return a
 }
 
+func TestLivePostsCapturedConversation(t *testing.T) {
+	f := newBridgeFixture(t)
+	a := f.add(t, "p1", "t1", "agent", domain.StatusWorking)
+	if err := f.out.Live(f.ctx, a.Key, []string{"you: check this", "agent: working on it"}); err != nil {
+		t.Fatal(err)
+	}
+	sent := f.tg.Sent()
+	if len(sent) != 1 || sent[0].Text != "you: check this\nagent: working on it" || !sent[0].Code || sent[0].Notify {
+		t.Fatalf("live posts = %+v", sent)
+	}
+}
+
 func (f *bridgeFixture) setStatus(a domain.Agent, st domain.Status) domain.Agent {
 	a.Status = st
 	f.agents[a.Key] = a

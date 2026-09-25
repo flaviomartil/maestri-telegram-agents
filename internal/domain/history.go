@@ -106,6 +106,16 @@ func (h *History) Marked() bool { return h.mark >= 0 }
 // Len returns the number of committed lines.
 func (h *History) Len() int { return len(h.committed) }
 
+func (h *History) CommittedTail(n int) []string {
+	if n <= 0 {
+		return nil
+	}
+	if n > len(h.committed) {
+		n = len(h.committed)
+	}
+	return append([]string(nil), h.committed[len(h.committed)-n:]...)
+}
+
 // Lines returns the committed lines after the mark (all of them without a
 // mark) followed by the current tail. A gap marker comes first when lines
 // in that range were dropped by the caps.

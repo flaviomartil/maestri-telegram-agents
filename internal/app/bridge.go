@@ -74,6 +74,9 @@ func NewBridge(cfg domain.Config, herdr domain.HerdrGateway, tg domain.TelegramG
 		log:         log,
 		CallTimeout: bridgeCallTimeout,
 	}
+	if capture != nil {
+		capture.Publish = func(key domain.Key, lines []string) { b.Submit(liveOutput{key: key, lines: lines}) }
+	}
 	// Slow work (agent.start, a file download) runs off the loop and
 	// reports back as a job, so the bridge stays the only writer to
 	// Telegram.
@@ -116,6 +119,11 @@ func (b *Bridge) spawn(fn func(context.Context)) {
 // outbound posts the questions that are still waiting.
 type presenceAway struct{}
 
+type liveOutput struct {
+	key   domain.Key
+	lines []string
+}
+
 // SetPresence wires quiet mode into the outbound (posts mode, catch-up)
 // and the inbound (/away, /here, the /status header).
 func (b *Bridge) SetPresence(p *Presence, opts *Options) {
@@ -154,7 +162,7 @@ func (b *Bridge) Fatal() <-chan error { return b.fatal }
 // next event or a resync brings the state back.
 func (b *Bridge) Submit(job any) {
 	switch job.(type) {
-	case AgentEvent, domain.TopicMessage, domain.TopicAttachment, domain.ButtonPressed, domain.GeneralCommand, presenceAway, startResult, inboxResult:
+	case AgentEvent, domain.TopicMessage, domain.TopicAttachment, domain.ButtonPressed, domain.GeneralCommand, presenceAway, startResult, inboxResult, liveOutput:
 	default:
 		b.log.Warn("bridge job of unknown type dropped", slog.String("type", fmt.Sprintf("%T", job)))
 		return
@@ -212,6 +220,8 @@ func (b *Bridge) handle(ctx context.Context, job any) {
 			b.in.Forget(j.Agent.Key)
 			b.run(ctx, "forget", func(ctx context.Context) error { return b.out.Forget(ctx, j.Agent.Key) })
 		}
+	case liveOutput:
+		b.run(ctx, "live_output", func(ctx context.Context) error { return b.out.Live(ctx, j.key, j.lines) })
 	case domain.ButtonPressed:
 		b.log.Debug("bridge job", slog.String("kind", "button"), slog.Int("thread_id", j.ThreadID), slog.Int("message_id", j.MessageID))
 		if strings.HasPrefix(j.Data, panelPrefix) {

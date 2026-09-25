@@ -392,6 +392,25 @@ func (o *outbound) SetPresence(quiet func() bool, opts *Options) {
 // Due delivers keys whose settle timer fired; call Fire for each.
 func (o *outbound) Due() <-chan domain.Key { return o.deb.Due() }
 
+func (o *outbound) Live(ctx context.Context, key domain.Key, lines []string) error {
+	if o.paused() {
+		return nil
+	}
+	entry, ok := o.topics.Entry(key)
+	if !ok || !entry.Status.Live() || entry.Muted {
+		return nil
+	}
+	text := o.clean(key, strings.Join(lines, "\n"))
+	if text == "" {
+		return nil
+	}
+	_, err := o.tg.Send(ctx, domain.Outgoing{ThreadID: entry.ThreadID, Text: text, Code: true})
+	if err == nil {
+		return nil
+	}
+	return o.sendFailed(key, err)
+}
+
 // Observe schedules a screen post when the event moves an agent into a
 // status worth posting, and cancels a pending one otherwise. A blocked
 // agent that is already known at startup (AgentAppeared) is posted too:

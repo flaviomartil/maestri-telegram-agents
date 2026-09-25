@@ -91,6 +91,8 @@ open topic shows a Claude Code question you can answer from the phone.*
   private chat with a sound and a link, so you can mute the group and still
   hear the one thing that matters. When the agent finishes, the tail is
   posted silently.
+- **Conversation streams live**: new terminal output, including prompts typed
+  in Herdr and agent replies, is posted to the agent's topic as it appears.
 - **Answers go back**: plain text becomes a prompt, `y` / `n` / `1`..`9` /
   `enter` / `esc` answer dialogs, `/keys` sends raw keys.
 - **Look at the screen** with `/screen`, or `/screen all` for everything the

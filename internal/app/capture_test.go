@@ -93,6 +93,26 @@ func TestCaptureTickReadsWorkingAgentsOnly(t *testing.T) {
 	}
 }
 
+func TestCapturePublishesOnlyNewCommittedLines(t *testing.T) {
+	f := newCaptureFixture(t)
+	a := f.agent("p1", domain.StatusWorking)
+	var published [][]string
+	f.capture.Publish = func(key domain.Key, lines []string) {
+		if key != a.Key {
+			t.Fatalf("published key = %v", key)
+		}
+		published = append(published, lines)
+	}
+	f.herdr.SetScreen("p1", text(1, 20))
+	f.capture.tick(f.ctx)
+	f.capture.tick(f.ctx)
+	f.herdr.SetScreen("p1", text(4, 24))
+	f.capture.tick(f.ctx)
+	if len(published) != 2 || !reflect.DeepEqual(published[0], screenLines(text(1, 12))) || !reflect.DeepEqual(published[1], screenLines(text(13, 16))) {
+		t.Fatalf("published = %v", published)
+	}
+}
+
 func TestCaptureRunFiresOnClock(t *testing.T) {
 	f := newCaptureFixture(t)
 	f.agent("p1", domain.StatusWorking)

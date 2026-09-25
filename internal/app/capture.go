@@ -37,6 +37,7 @@ type Capture struct {
 	Grace       time.Duration
 	MinAway     time.Duration
 	ReadTimeout time.Duration
+	Publish     func(domain.Key, []string)
 }
 
 // NewCapture wires the capture over the Herdr port and the registry's live
@@ -150,8 +151,11 @@ func (c *Capture) capture(ctx context.Context, key domain.Key) {
 		return
 	}
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.merge(key, screen)
+	_, lines := c.merge(key, screen)
+	c.mu.Unlock()
+	if len(lines) > 0 && c.Publish != nil {
+		c.Publish(key, lines)
+	}
 }
 
 func (c *Capture) read(ctx context.Context, key domain.Key) (domain.Screen, error) {
@@ -163,23 +167,24 @@ func (c *Capture) read(ctx context.Context, key domain.Key) (domain.Screen, erro
 // merge appends the screen to the key's history unless it equals the last
 // merged one. Herdr 0.7.5 reports revision 0 for agent.read, so the text
 // hash, not the revision, decides. The caller holds the lock.
-func (c *Capture) merge(key domain.Key, screen domain.Screen) *domain.History {
+func (c *Capture) merge(key domain.Key, screen domain.Screen) (*domain.History, []string) {
 	h := c.history(key)
 	hash := hashText(screen.Text)
 	if c.last[key] == hash {
 		c.log.Debug("screen unchanged", slog.String("key", key.String()), slog.Int("committed", h.Len()))
-		return h
+		return h, nil
 	}
 	added, shift, gap := h.Append(screenLines(screen.Text))
 	c.last[key] = hash
+	lines := h.CommittedTail(added)
 	if gap {
 		c.log.Warn("screen history gap", slog.String("key", key.String()),
 			slog.Int64("revision", screen.Revision), slog.Int("added", added), slog.Int("committed", h.Len()))
-		return h
+		return h, append([]string{domain.HistoryGapMarker}, lines...)
 	}
 	c.log.Debug("screen captured", slog.String("key", key.String()), slog.Int64("revision", screen.Revision),
 		slog.Int("added", added), slog.Int("shift", shift), slog.Int("committed", h.Len()), slog.Bool("truncated", screen.Truncated))
-	return h
+	return h, lines
 }
 
 // Since reads a fresh screen, merges it and returns the history lines after
@@ -190,11 +195,15 @@ func (c *Capture) Since(ctx context.Context, key domain.Key) (lines []string, ma
 		return nil, false, err
 	}
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	h := c.merge(key, screen)
+	h, added := c.merge(key, screen)
 	lines = h.Lines()
-	c.log.Debug("history read", slog.String("key", key.String()), slog.Int("lines", len(lines)), slog.Bool("marked", h.Marked()))
-	return lines, h.Marked(), nil
+	marked = h.Marked()
+	c.mu.Unlock()
+	if len(added) > 0 && c.Publish != nil {
+		c.Publish(key, added)
+	}
+	c.log.Debug("history read", slog.String("key", key.String()), slog.Int("lines", len(lines)), slog.Bool("marked", marked))
+	return lines, marked, nil
 }
 
 // history returns the key's history, creating it. The caller holds the lock.
